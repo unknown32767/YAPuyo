@@ -6,7 +6,12 @@ public class SampleCellPool<T> : ICellPool<T> where T : class, ICell
 {
     public Dictionary<T, int> cellCounts;
 
-    public List<T> cellPool;
+    private List<T> cellPool;
+
+    public SampleCellPool()
+    {
+        cellPool = new List<T>();
+    }
 
     public T Take()
     {

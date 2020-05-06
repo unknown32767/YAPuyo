@@ -6,14 +6,34 @@ using UnityEngine.EventSystems;
 
 public class SampleGameMain : MonoBehaviour, IPointerClickHandler
 {
+    public GameObject cellTemplate;
+    public Transform cellRoot;
+
     private Board<SampleCell> board;
 
     private bool intractable;
 
     private void Start()
     {
+        SampleCell.cellTemplate = cellTemplate;
+        var simpleCellConfig = new Dictionary<SampleCell, int>()
+        {
+            { new SampleCell{ type = 1, color = Color.red}, 10}, 
+            { new SampleCell{ type = 2, color = Color.green}, 10}, 
+            { new SampleCell{ type = 3, color = Color.blue}, 10}, 
+            { new SampleCell{ type = 4, color = Color.yellow}, 10},
+        };
+        var cellPool = new SampleCellPool<SampleCell>()
+        { 
+            cellCounts = simpleCellConfig
+        };
+
         board = new Board<SampleCell>(8, 8)
         {
+            cellSize = new Vector2Int(50, 50),
+            gap = new Vector2Int(10, 10),
+            cellRoot = cellRoot,
+            cellPool = cellPool,
         };
         board.SetVonNeumannNeighbour();
 

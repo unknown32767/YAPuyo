@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using static UnityEngine.Object;
 
@@ -9,13 +10,15 @@ public class Board<T> where T : class, ICell
     public int width;
     public int height;
 
-    public Vector2Int cellSize;
-    public Vector2Int gap;
+    public Vector2 cellSize;
+    public Vector2 gap;
 
     public T[,] cells { get; }
     public RectTransform[,] cellTransforms { get; }
 
-    private Vector2Int totalSize => cellSize + gap;
+    public Transform cellRoot;
+
+    private Vector2 totalSize => cellSize + gap;
 
     //生成相关
     public ICellPool<T> cellPool;
@@ -58,8 +61,9 @@ public class Board<T> where T : class, ICell
 
         moveAnim = (rectTransform, toPos) =>
         {
-            LeanTween.move(rectTransform, toPos, 0.5f);
-            return 0.5f;
+            var time = (rectTransform.anchoredPosition - toPos).magnitude / 100.0f;
+            LeanTween.move(rectTransform, toPos, time);
+            return time;
         };
 
         fillAnim = (rectTransform, pos) =>
@@ -74,7 +78,7 @@ public class Board<T> where T : class, ICell
         {
             LeanTween.scale(rectTransform, Vector3.zero, 0.5f).setOnComplete(() =>
             {
-                Destroy(rectTransform);
+                Destroy(rectTransform.gameObject);
             });
             return 0.5f;
         };
@@ -82,14 +86,36 @@ public class Board<T> where T : class, ICell
         neighbourOffsets = vonNeumannNeighbour;
     }
 
+    public void Clear()
+    {
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                cells[i, j] = null;
+
+                if (cellTransforms[i, j] != null)
+                {
+                    Destroy(cellTransforms[i,j].gameObject);
+                }
+                cellTransforms[i, j] = null;
+            }
+        }
+    }
+
+    public bool InBound(Vector2Int pos)
+    {
+        return pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height;
+    }
+
     public Vector2 CellToLocal(Vector2Int pos)
     {
-        return Vector2.Scale(totalSize, pos);
+        return Vector2.Scale(totalSize, pos) + cellSize * 0.5f;
     }
 
     public Vector2 CellToLocal(int x, int y)
     {
-        return new Vector2(x * totalSize.x, y * totalSize.y);
+        return new Vector2(x * totalSize.x, y * totalSize.y) + cellSize * 0.5f;
     }
 
     public Vector2Int LocalToCell(Vector2 pos)
@@ -110,13 +136,19 @@ public class Board<T> where T : class, ICell
     public float MoveCell(Vector2Int from, Vector2Int to)
     {
         var fromTransform = cellTransforms[from.x, from.y];
-        Destroy(cellTransforms[to.x, to.y]);
+        var toTransform = cellTransforms[to.x, to.y];
+
+        if (toTransform != null)
+        {
+            Destroy(toTransform.gameObject);
+        }
         cellTransforms[to.x, to.y] = fromTransform;
         cellTransforms[from.x, from.y] = null;
+
         cells[to.x, to.y] = cells[from.x, from.y];
         cells[from.x, from.y] = null;
 
-        return moveAnim.Invoke(fromTransform, to);
+        return moveAnim(fromTransform, CellToLocal(to));
     }
 
     public float RemoveCell(Vector2Int index)
@@ -142,6 +174,22 @@ public class Board<T> where T : class, ICell
         return maxAnimTime;
     }
 
+    public float RemoveCells(List<List<Vector2Int>> indicess)
+    {
+        var maxAnimTime = 0.0f;
+
+        foreach (var indices in indicess)
+        {
+            foreach (var index in indices)
+            {
+                var animTime = RemoveCell(index);
+                maxAnimTime = Mathf.Max(maxAnimTime, animTime);
+            }
+        }
+
+        return maxAnimTime;
+    }
+
     public float FillCellInPlace()
     {
         var maxAnimTime = 0.0f;
@@ -154,13 +202,77 @@ public class Board<T> where T : class, ICell
                 {
                     var newCell = cellPool.Take();
                     var rectTransform = newCell.CreateInstance();
+                    rectTransform.SetParent(cellRoot);
                     var animTime = fillAnim(rectTransform, CellToLocal(i, j));
+
+                    cells[i, j] = newCell;
+                    cellTransforms[i, j] = rectTransform;
+
                     maxAnimTime = Mathf.Max(maxAnimTime, animTime);
                 }
             }
         }
 
         return maxAnimTime;
+    }
+
+    public float Collapse()
+    {
+        var maxAnimTime = 0.0f;
+
+        for (int i = 0; i < width; i++)
+        {
+            var j = 0;
+            var k = 0;
+            while (j < height && k < height)
+            {
+                if (cells[i, j] != null)
+                    j++;
+                else
+                {
+                    if (k < j)
+                        k = j;
+                    while (k < height && cells[i, k] == null)
+                    {
+                        k++;
+                    }
+
+                    if (k < 16)
+                    {
+                        var animTime = MoveCell(new Vector2Int(i, k), new Vector2Int(i, j));
+                        maxAnimTime = Mathf.Max(maxAnimTime, animTime);
+                        j++;
+                    }
+                }
+            }
+        }
+
+        return maxAnimTime;
+    }
+
+    public void DropDownCells(List<(T cell, RectTransform tf)> dropdownCells)
+    {
+        foreach (var (cell, tf) in dropdownCells.OrderBy(x => x.tf.anchoredPosition.y))
+        {
+            var cellPos = LocalToCell(tf.anchoredPosition);
+            var index = cells.GetLength(1);
+            for (; index > 0; index--)
+            {
+                if (cells[cellPos.x, index - 1] != null)
+                {
+                    break;
+                }
+            }
+
+            if (index == cells.GetLength(1))
+            {
+                continue;
+            }
+
+            cells[cellPos.x, index] = cell;
+            cellTransforms[cellPos.x, index] = tf;
+            tf.anchoredPosition = CellToLocal(cellPos.x, index);
+        }
     }
 
     private Vector2Int FirstUnchecked(bool[,] cellChecked)
@@ -200,7 +312,7 @@ public class Board<T> where T : class, ICell
 
     private List<Vector2Int> Bfs(Vector2Int pos, ref bool[,] cellChecked, Func<Vector2Int, bool> extraConnectRequirement = null)
     {
-        if (cellChecked[pos.x, pos.y] || (pos.x == -1 && pos.y==-1))
+        if (!InBound(pos) || cellChecked[pos.x, pos.y])
         {
             return null;
         }
@@ -225,8 +337,20 @@ public class Board<T> where T : class, ICell
                 foreach (var offset in neighbourOffsets)
                 {
                     var nextPos = currentPos + offset;
-                    if (!cellChecked[nextPos.x, nextPos.y])
+
+                    if (!InBound(nextPos) || cellChecked[nextPos.x, nextPos.y])
+                    {
+                        continue;
+                    }
+
+                    if(cells[nextPos.x, nextPos.y] == null)
+                    {
+                        cellChecked[nextPos.x, nextPos.y] = true;
+                    }
+                    else if(!queue.Contains(nextPos))
+                    {
                         queue.Enqueue(nextPos);
+                    }
                 }
             }
         }
@@ -243,14 +367,14 @@ public class Board<T> where T : class, ICell
         {
             var start = FirstUnchecked(cellChecked);
 
-            if (start.x == -1 && start.y == -1)
+            if (!InBound(start))
             {
                 break;
             }
 
             var connected = Bfs(start, ref cellChecked, extraConnectRequirement);
 
-            if (connected.Count > threshold)
+            if (connected.Count >= threshold)
             {
                 result.Add(connected);
             }
