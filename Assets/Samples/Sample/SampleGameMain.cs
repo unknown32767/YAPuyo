@@ -80,7 +80,12 @@ public class SampleGameMain : MonoBehaviour, IPointerClickHandler
 
         yield return new WaitForSeconds(waitTime);
 
-        waitTime = board.FillCellInPlace();
+        waitTime = board.Collapse();
+
+        yield return new WaitForSeconds(waitTime);
+
+        //waitTime = board.FillCellInPlace();
+        waitTime = board.FillCellDropDown();
 
         yield return new WaitForSeconds(waitTime);
 

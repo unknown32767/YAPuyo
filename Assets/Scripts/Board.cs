@@ -61,8 +61,8 @@ public class Board<T> where T : class, ICell
 
         moveAnim = (rectTransform, toPos) =>
         {
-            var time = (rectTransform.anchoredPosition - toPos).magnitude / 100.0f;
-            LeanTween.move(rectTransform, toPos, time);
+            var time = (rectTransform.anchoredPosition - toPos).magnitude / (totalSize.y * 4);
+            LeanTween.move(rectTransform, toPos, time).setEase(LeanTweenType.linear);
             return time;
         };
 
@@ -216,6 +216,54 @@ public class Board<T> where T : class, ICell
         return maxAnimTime;
     }
 
+    public float FillCellDropDown(bool unifyDropHeight = true)
+    {
+        var maxAnimTime = 0.0f;
+
+        var movingCells = new List<(T cell, Vector2Int pos)>();
+
+        var maxDropHeight = 0;
+
+        for (var i = 0; i < width; i++)
+        {
+            for (var j = 0; j < height; j++)
+            {
+                if (cells[i, j] == null)
+                {
+                    maxDropHeight = Mathf.Max(maxDropHeight, height - j);
+                    break;
+                }
+            }
+        }
+
+        for (var i = 0; i < width; i++)
+        {
+            var startHeight = height;
+            for (var j = 0; j < height; j++)
+            {
+                if (cells[i, j] == null)
+                {
+                    var newCell = cellPool.Take();
+                    var rectTransform = newCell.CreateInstance();
+                    var dropHeight = unifyDropHeight ? maxDropHeight + j : startHeight;
+
+                    rectTransform.SetParent(cellRoot);
+                    rectTransform.anchoredPosition = CellToLocal(i, dropHeight);
+                    startHeight++;
+
+                    var animTime = moveAnim(rectTransform, CellToLocal(i, j));
+
+                    cells[i, j] = newCell;
+                    cellTransforms[i, j] = rectTransform;
+
+                    maxAnimTime = Mathf.Max(maxAnimTime, animTime);
+                }
+            }
+        }
+
+        return maxAnimTime;
+    }
+
     public float Collapse()
     {
         var maxAnimTime = 0.0f;
@@ -237,7 +285,7 @@ public class Board<T> where T : class, ICell
                         k++;
                     }
 
-                    if (k < 16)
+                    if (k < height)
                     {
                         var animTime = MoveCell(new Vector2Int(i, k), new Vector2Int(i, j));
                         maxAnimTime = Mathf.Max(maxAnimTime, animTime);
