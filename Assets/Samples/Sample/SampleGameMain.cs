@@ -18,13 +18,13 @@ public class SampleGameMain : MonoBehaviour, IPointerClickHandler
         SampleCell.cellTemplate = cellTemplate;
         var simpleCellConfig = new Dictionary<SampleCell, int>()
         {
-            { new SampleCell{ type = 1, color = Color.red}, 10}, 
-            { new SampleCell{ type = 2, color = Color.green}, 10}, 
-            { new SampleCell{ type = 3, color = Color.blue}, 10}, 
-            { new SampleCell{ type = 4, color = Color.yellow}, 10},
+            { new SampleCell { type = 1, color = Color.red }, 10 },
+            { new SampleCell { type = 2, color = Color.green }, 10 },
+            { new SampleCell { type = 3, color = Color.blue }, 10 },
+            { new SampleCell { type = 4, color = Color.yellow }, 10 },
         };
         var cellPool = new SampleCellPool<SampleCell>()
-        { 
+        {
             cellCounts = simpleCellConfig
         };
 
@@ -62,6 +62,7 @@ public class SampleGameMain : MonoBehaviour, IPointerClickHandler
         {
             return;
         }
+
         RectTransformUtility.ScreenPointToLocalPointInRectangle(GetComponent<RectTransform>(), eventData.position,
             eventData.pressEventCamera, out var localPos);
 
@@ -76,18 +77,9 @@ public class SampleGameMain : MonoBehaviour, IPointerClickHandler
 
         var connected = board.FindConnected(pos);
 
-        var waitTime = board.RemoveCells(connected);
-
-        yield return new WaitForSeconds(waitTime);
-
-        waitTime = board.Collapse();
-
-        yield return new WaitForSeconds(waitTime);
-
-        //waitTime = board.FillCellInPlace();
-        waitTime = board.FillCellDropDown();
-
-        yield return new WaitForSeconds(waitTime);
+        yield return new WaitForSeconds(board.RemoveCells(connected));
+        yield return new WaitForSeconds(board.Collapse());
+        yield return new WaitForSeconds(board.FillCellDropDown());
 
         intractable = true;
     }

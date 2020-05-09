@@ -20,10 +20,10 @@ public class PuyoGameMain : MonoBehaviour
         SampleCell.cellTemplate = cellTemplate;
         var simpleCellConfig = new Dictionary<SampleCell, int>()
         {
-            { new SampleCell{ type = 1, color = Color.red}, 20},
-            { new SampleCell{ type = 2, color = Color.green}, 20},
-            { new SampleCell{ type = 3, color = Color.blue}, 20},
-            { new SampleCell{ type = 4, color = Color.yellow}, 20},
+            { new SampleCell { type = 1, color = Color.red }, 20 },
+            { new SampleCell { type = 2, color = Color.green }, 20 },
+            { new SampleCell { type = 3, color = Color.blue }, 20 },
+            { new SampleCell { type = 4, color = Color.yellow }, 20 },
         };
         cellPool = new SampleCellPool<SampleCell>()
         {
@@ -109,13 +109,8 @@ public class PuyoGameMain : MonoBehaviour
 
         while (connected.Count != 0)
         {
-            var waitTime = board.RemoveCells(connected);
-
-            yield return new WaitForSeconds(waitTime);
-
-            waitTime = board.Collapse();
-
-            yield return new WaitForSeconds(waitTime);
+            yield return new WaitForSeconds(board.RemoveCells(connected));
+            yield return new WaitForSeconds(board.Collapse());
 
             connected = board.FindAllConnected(4);
         }

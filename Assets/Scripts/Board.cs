@@ -76,10 +76,7 @@ public class Board<T> where T : class, ICell
 
         matchAnim = (rectTransform) =>
         {
-            LeanTween.scale(rectTransform, Vector3.zero, 0.5f).setOnComplete(() =>
-            {
-                Destroy(rectTransform.gameObject);
-            });
+            LeanTween.scale(rectTransform, Vector3.zero, 0.5f).setOnComplete(() => { Destroy(rectTransform.gameObject); });
             return 0.5f;
         };
 
@@ -96,8 +93,9 @@ public class Board<T> where T : class, ICell
 
                 if (cellTransforms[i, j] != null)
                 {
-                    Destroy(cellTransforms[i,j].gameObject);
+                    Destroy(cellTransforms[i, j].gameObject);
                 }
+
                 cellTransforms[i, j] = null;
             }
         }
@@ -142,6 +140,7 @@ public class Board<T> where T : class, ICell
         {
             Destroy(toTransform.gameObject);
         }
+
         cellTransforms[to.x, to.y] = fromTransform;
         cellTransforms[from.x, from.y] = null;
 
@@ -149,6 +148,17 @@ public class Board<T> where T : class, ICell
         cells[from.x, from.y] = null;
 
         return moveAnim(fromTransform, CellToLocal(to));
+    }
+
+    public float SwapCell(Vector2Int a, Vector2Int b)
+    {
+        var timeA = moveAnim(cellTransforms[a.x, a.y], CellToLocal(b));
+        var timeB = moveAnim(cellTransforms[b.x, b.y], CellToLocal(a));
+
+        (cells[a.x, a.y], cells[b.x, b.y]) = (cells[b.x, b.y], cells[a.x, a.y]);
+        (cellTransforms[a.x, a.y], cellTransforms[b.x, b.y]) = (cellTransforms[b.x, b.y], cellTransforms[a.x, a.y]);
+
+        return Mathf.Max(timeA, timeB);
     }
 
     public float RemoveCell(Vector2Int index)
@@ -219,8 +229,6 @@ public class Board<T> where T : class, ICell
     public float FillCellDropDown(bool unifyDropHeight = true)
     {
         var maxAnimTime = 0.0f;
-
-        var movingCells = new List<(T cell, Vector2Int pos)>();
 
         var maxDropHeight = 0;
 
@@ -391,11 +399,11 @@ public class Board<T> where T : class, ICell
                         continue;
                     }
 
-                    if(cells[nextPos.x, nextPos.y] == null)
+                    if (cells[nextPos.x, nextPos.y] == null)
                     {
                         cellChecked[nextPos.x, nextPos.y] = true;
                     }
-                    else if(!queue.Contains(nextPos))
+                    else if (!queue.Contains(nextPos))
                     {
                         queue.Enqueue(nextPos);
                     }
