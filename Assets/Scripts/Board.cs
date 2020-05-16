@@ -18,7 +18,7 @@ public class Board<T> where T : class, ICell
 
     public Transform cellRoot;
 
-    private Vector2 totalSize => cellSize + gap;
+    public Vector2 totalSize => cellSize + gap;
 
     //生成相关
     public ICellPool<T> cellPool;
