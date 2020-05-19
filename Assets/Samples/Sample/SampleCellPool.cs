@@ -2,7 +2,7 @@
 using System.Linq;
 using UnityEngine;
 
-public class SampleCellPool<T> : ICellPool<T> where T : class, ICell
+public class SampleCellPool<T> : ICellPool<T> where T : class, ICell<T>
 {
     public Dictionary<T, int> cellCounts;
 

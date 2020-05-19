@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-public interface ICellPool<T> where T : class, ICell
+public interface ICellPool<T> where T : class, ICell<T>
 {
     T Take();
 

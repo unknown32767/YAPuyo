@@ -1,16 +1,16 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-public class SampleCell : ICell
+public class SampleCell : ICell<SampleCell>
 {
     public int type;
     public Color color;
 
     public static GameObject cellTemplate;
 
-    public bool IsSameType(ICell other)
+    public bool IsSameType(SampleCell other)
     {
-        return ((SampleCell) other).type == type;
+        return other.type == type;
     }
 
     public RectTransform CreateInstance()

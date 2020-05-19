@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public interface ICell
+public interface ICell<T>
 {
-    bool IsSameType(ICell other);
+    bool IsSameType(T other);
 
     RectTransform CreateInstance();
 }

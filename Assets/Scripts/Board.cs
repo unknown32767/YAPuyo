@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 using static UnityEngine.Object;
 
-public class Board<T> where T : class, ICell
+public class Board<T> where T : class, ICell<T>
 {
     //棋盘相关
     public int width;
