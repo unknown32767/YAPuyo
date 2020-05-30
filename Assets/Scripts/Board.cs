@@ -106,6 +106,11 @@ public class Board<T> where T : class, ICell<T>
         return pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height;
     }
 
+    public bool InBound(Vector2 pos)
+    {
+        return InBound(LocalToCell(pos));
+    }
+
     public Vector2 CellToLocal(Vector2Int pos)
     {
         return Vector2.Scale(totalSize, pos) + cellSize * 0.5f;
