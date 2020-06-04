@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 
 public class TNTCellBlock : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler, IDragHandler
 {
-    public Rigidbody2D rigidbody;
+    public Rigidbody2D blockRigidbody;
 
     [NonSerialized] public List<TNTCellObject> cells;
 
@@ -54,6 +54,11 @@ public class TNTCellBlock : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
     {
         cells.Remove(cellObject);
         Destroy(cellObject.gameObject);
+
+        if (cells.Count == 0)
+        {
+            TNTGameMain.instance.RemoveBlock(this);
+        }
     }
 
     public void UpdateBlock()
@@ -101,7 +106,7 @@ public class TNTCellBlock : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if(eventData.button == PointerEventData.InputButton.Left)
+        if(eventData.button == PointerEventData.InputButton.Left && TNTGameMain.instance.intractable)
         {
             selected = true;
             originPos = transform.localPosition;
@@ -110,10 +115,10 @@ public class TNTCellBlock : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        if (eventData.button == PointerEventData.InputButton.Left)
+        if (eventData.button == PointerEventData.InputButton.Left && selected)
         {
             selected = false;
-            rigidbody.constraints = RigidbodyConstraints2D.None;
+            blockRigidbody.constraints = RigidbodyConstraints2D.None;
             TNTGameMain.instance.DropBlock(this);
         }
     }
