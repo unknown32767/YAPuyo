@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 using UnityEngine;
 
 public class SampleCellPool<T> : ICellPool<T> where T : class, ICell<T>
@@ -36,7 +34,7 @@ public class SampleCellPool<T> : ICellPool<T> where T : class, ICell<T>
         }
 
         var res = new List<T>();
-        for (var i = 0; i < count; i++)
+        for (int i = 0; i < count; i++)
         {
             var index = Random.Range(0, cellPool.Count);
             res.Add(cellPool[index]);

@@ -47,7 +47,7 @@ public class TNTCellBlock : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 
     private void Rotate()
     {
-        transform.Rotate(0,0,-90);
+        transform.Rotate(0,0,-45);
     }
 
     public void RemoveCell(TNTCellObject cellObject)
@@ -119,6 +119,7 @@ public class TNTCellBlock : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
         {
             selected = false;
             blockRigidbody.constraints = RigidbodyConstraints2D.None;
+            blockRigidbody.velocity = Vector2.down * 10.0f;
             TNTGameMain.instance.DropBlock(this);
         }
     }

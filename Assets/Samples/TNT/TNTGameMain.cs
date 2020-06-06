@@ -12,6 +12,8 @@ public class TNTGameMain : MonoBehaviour
     public GameObject cellTemplate;
     public GameObject blockTemplate;
     public Transform cellRoot;
+    public Rigidbody2D cellRootRigidbody; 
+    public EdgeCollider2D cellRootCollider;
     public Text status;
     public Text statistic;
     public Text timer;
@@ -103,6 +105,38 @@ public class TNTGameMain : MonoBehaviour
         Destroy(cellBlock.gameObject);
     }
 
+    public void UpsideDown()
+    {
+        cellRoot.Rotate(0, 0, -180);
+        for (var i = 0; i < cellRootCollider.points.Length; i++)
+        {
+            cellRootCollider.points[i] *= new Vector2(1, -1);
+        }
+
+        StartCoroutine(UpdateCells());
+    }
+
+    public void Shake()
+    {
+        StartCoroutine(ShakeCoroutine());
+    }
+
+    private IEnumerator ShakeCoroutine()
+    {
+        var oldPosition = cellRoot.position;
+        var oldRotation = cellRoot.rotation;
+        cellRootRigidbody.constraints = RigidbodyConstraints2D.None;
+        cellRootRigidbody.AddForce(Vector2.right * 10.0f, ForceMode2D.Impulse);
+
+        yield return new WaitForSeconds(1.0f);
+
+        cellRootRigidbody.constraints = RigidbodyConstraints2D.FreezeAll;
+        cellRoot.position = oldPosition;
+        cellRoot.rotation = oldRotation;
+
+        StartCoroutine(UpdateCells());
+    }
+
     private void Start()
     {
         if (instance == null)
@@ -131,7 +165,7 @@ public class TNTGameMain : MonoBehaviour
 
         waitingTimePerStep = new List<float>();
         waitingTimePerMove = new List<float>();
-            
+
         intractable = true;
     }
 
@@ -143,6 +177,8 @@ public class TNTGameMain : MonoBehaviour
     private IEnumerator StartGameCoroutine()
     {
         intractable = false;
+
+        Time.timeScale = 10;
 
         if (cellBlocks.Count > 0)
         {
@@ -192,7 +228,7 @@ public class TNTGameMain : MonoBehaviour
             {
                 status.text = "Waiting physic stop";
                 timer.text = $"{Time.time - stepStartTime:F}";
-                yield return null;
+                yield return new WaitForFixedUpdate();
             }
 
             connects = Bfs();
@@ -236,18 +272,18 @@ public class TNTGameMain : MonoBehaviour
         statistic.text = $"更新时间（每步）\t{waitingTimePerMove.Min()}\t{waitingTimePerMove.Max()}\t{waitingTimePerMove.Average()}\n" +
                          $"更新时间（每次消除）\t{waitingTimePerStep.Min()}\t{waitingTimePerStep.Max()}\t{waitingTimePerStep.Average()}\n" +
                          $"行动次数\t{moveCount}\n" +
-                         $"消除行动次数\t{matchMoveCount}\t消除行动百分比\t{(float) matchMoveCount / moveCount:P}\n" +
-                         $"总消除次数\t{matchCount}\t平均每次连消（次）\t{(float) matchCount / matchMoveCount:F}\n" +
+                         $"消除行动次数\t{matchMoveCount}\t消除行动百分比\t{(float)matchMoveCount / moveCount:P}\n" +
+                         $"总消除次数\t{matchCount}\t平均每次连消（次）\t{(float)matchCount / matchMoveCount:F}\n" +
                          $"最大同时消除（次）\t{maxMatchCount}\n" +
                          $"最大连消（次）\t{maxCombo}";
     }
 
     private List<TNTCellObject> GetContacts(TNTCellObject cellObject)
     {
-        var collider = cellObject.transform.GetComponent<Collider2D>();
+        var collider2d = cellObject.transform.GetComponent<Collider2D>();
 
         var contactPoints = new ContactPoint2D[10];
-        var count = collider.GetContacts(contactPoints);
+        var contactCount = collider2d.GetContacts(contactPoints);
         var contacts = new List<TNTCellObject>();
 
         foreach (Transform tf in cellObject.transform.parent)
@@ -259,14 +295,19 @@ public class TNTGameMain : MonoBehaviour
             }
         }
 
-        for (var i = 0; i < count; i++)
+        for (var i = 0; i < contactCount; i++)
         {
-            if (contactPoints[i].rigidbody.bodyType != RigidbodyType2D.Static)
+            var self = contactPoints[i].collider.GetComponent<TNTCellObject>();
+            var other = contactPoints[i].otherCollider.GetComponent<TNTCellObject>();
+
+            if (other != cellObject)
             {
-                if (contactPoints[i].collider.transform.GetComponent<TNTCellObject>() != null)
-                {
-                    contacts.Add(contactPoints[i].collider.transform.GetComponent<TNTCellObject>());
-                }
+                Debug.Log("?");
+            }
+
+            if (self != null)
+            {
+                contacts.Add(self);
             }
         }
 
