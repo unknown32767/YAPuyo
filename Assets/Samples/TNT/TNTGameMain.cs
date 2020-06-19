@@ -289,7 +289,7 @@ public class TNTGameMain : MonoBehaviour
         foreach (Transform tf in cellObject.transform.parent)
         {
             var distance = Vector3.Distance(tf.position, cellObject.transform.position);
-            if (Mathf.Abs(distance - 32) < 1.0f)
+            if (Mathf.Abs(distance - 32) < 1.0f && tf.GetComponent<TNTCellObject>() != null)
             {
                 contacts.Add(tf.GetComponent<TNTCellObject>());
             }
@@ -309,6 +309,11 @@ public class TNTGameMain : MonoBehaviour
             {
                 contacts.Add(self);
             }
+        }
+
+        foreach (var c in contacts)
+        {
+            Debug.Log(c);
         }
 
         return contacts;

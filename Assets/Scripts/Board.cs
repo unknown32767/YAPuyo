@@ -29,7 +29,7 @@ public class Board<T> where T : class, ICell<T>
     public Func<RectTransform, float> matchAnim;
 
     //逻辑相关
-    private List<Vector2Int> neighbourOffsets;
+    protected List<Vector2Int> neighbourOffsets;
 
     private readonly List<Vector2Int> vonNeumannNeighbour = new List<Vector2Int>
     {
@@ -388,30 +388,31 @@ public class Board<T> where T : class, ICell<T>
         while (queue.Count != 0)
         {
             var currentPos = queue.Dequeue();
+            var currentCell = cells[currentPos.x, currentPos.y];
 
-            if (startCell.IsSameType(cells[currentPos.x, currentPos.y]) &&
-                (extraConnectRequirement == null || extraConnectRequirement(currentPos)))
+            connected.Add(currentPos);
+            cellChecked[currentPos.x, currentPos.y] = true;
+
+            foreach (var offset in neighbourOffsets)
             {
-                connected.Add(currentPos);
-                cellChecked[currentPos.x, currentPos.y] = true;
+                var nextPos = currentPos + offset;
 
-                foreach (var offset in neighbourOffsets)
+                if (!InBound(nextPos) || cellChecked[nextPos.x, nextPos.y])
                 {
-                    var nextPos = currentPos + offset;
+                    continue;
+                }
 
-                    if (!InBound(nextPos) || cellChecked[nextPos.x, nextPos.y])
-                    {
-                        continue;
-                    }
+                var nextCell = cells[nextPos.x, nextPos.y];
 
-                    if (cells[nextPos.x, nextPos.y] == null)
-                    {
-                        cellChecked[nextPos.x, nextPos.y] = true;
-                    }
-                    else if (!queue.Contains(nextPos))
-                    {
-                        queue.Enqueue(nextPos);
-                    }
+                if (nextCell == null)
+                {
+                    cellChecked[nextPos.x, nextPos.y] = true;
+                }
+                else if (!queue.Contains(nextPos) &&
+                         currentCell.IsSameType(nextCell) &&
+                         (extraConnectRequirement?.Invoke(currentPos) ?? true))
+                {
+                    queue.Enqueue(nextPos);
                 }
             }
         }
