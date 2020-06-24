@@ -9,10 +9,14 @@ using Random = UnityEngine.Random;
 
 public class TNTGameMain : MonoBehaviour
 {
+    [Header("Template")]
     public GameObject cellTemplate;
     public GameObject blockTemplate;
+    public GameObject enemyTemplate;
+
+    [Header("Reference")]
     public Transform cellRoot;
-    public Rigidbody2D cellRootRigidbody; 
+    public Rigidbody2D cellRootRigidbody;
     public EdgeCollider2D cellRootCollider;
     public Text status;
     public Text statistic;
@@ -22,7 +26,10 @@ public class TNTGameMain : MonoBehaviour
 
     [NonSerialized] public bool intractable;
 
+    private PlayerInstance playerInstance;
+    private Transform currentDropdown;
     private SampleCellPool<TNTCell> cellPool;
+    private EnemyPool enemyPool;
 
     private List<float> waitingTimePerStep;
     private List<float> waitingTimePerMove;
@@ -89,6 +96,7 @@ public class TNTGameMain : MonoBehaviour
     public static TNTGameMain instance { get; private set; }
 
     private List<TNTCellBlock> cellBlocks;
+    private List<EnemyInstance> enemies;
 
     public void CreateBlocK(List<TNTCellObject> cellObjects)
     {
@@ -159,6 +167,35 @@ public class TNTGameMain : MonoBehaviour
 
         cellBlocks = new List<TNTCellBlock>();
 
+        enemyPool = new EnemyPool
+        {
+            floatMin = -1,
+            floatMax = 3,
+            ttk = new Dictionary<Enemy, int>
+            {
+                {
+                    new Enemy
+                    {
+                        hpMax = 100,
+                        atk = 10,
+                        friction = 1,
+                        bounciness = 0,
+                    },
+                    10
+                },
+                {
+                    new Enemy
+                    {
+                        hpMax = 150,
+                        atk = 7,
+                        friction = 1,
+                        bounciness = 0,
+                    },
+                    15
+                }
+            }
+        };
+
         debug.onClick.AddListener(() =>
             EditorGUIUtility.PingObject(cellBlocks.LastOrDefault(cellBlock =>
                 !cellBlock.GetComponent<Rigidbody2D>().IsSleeping())));
@@ -177,6 +214,8 @@ public class TNTGameMain : MonoBehaviour
     private IEnumerator StartGameCoroutine()
     {
         intractable = false;
+
+        currentDropdown = null;
 
         Time.timeScale = 10;
 
@@ -205,10 +244,21 @@ public class TNTGameMain : MonoBehaviour
 
     public void DropBlock(TNTCellBlock cellBlock)
     {
+        currentDropdown = cellBlock.transform;
+
         cellBlock.transform.SetParent(cellRoot);
         cellBlocks.Add(cellBlock);
 
         StartCoroutine(UpdateCells());
+    }
+
+    private void DropEnemy(Enemy enemy)
+    {
+        var enemyTransform = Instantiate(enemyTemplate, cellRoot).GetComponent<RectTransform>();
+        var enemyInstance = enemyTransform.GetComponent<EnemyComponent>();
+
+        enemyTransform.anchoredPosition = new Vector2(Random.Range(-100.0f, 100.0f), 240);
+        enemyInstance.Init(enemy);
     }
 
     private IEnumerator UpdateCells()
@@ -272,10 +322,16 @@ public class TNTGameMain : MonoBehaviour
         statistic.text = $"更新时间（每步）\t{waitingTimePerMove.Min()}\t{waitingTimePerMove.Max()}\t{waitingTimePerMove.Average()}\n" +
                          $"更新时间（每次消除）\t{waitingTimePerStep.Min()}\t{waitingTimePerStep.Max()}\t{waitingTimePerStep.Average()}\n" +
                          $"行动次数\t{moveCount}\n" +
-                         $"消除行动次数\t{matchMoveCount}\t消除行动百分比\t{(float)matchMoveCount / moveCount:P}\n" +
-                         $"总消除次数\t{matchCount}\t平均每次连消（次）\t{(float)matchCount / matchMoveCount:F}\n" +
+                         $"消除行动次数\t{matchMoveCount}\t消除行动百分比\t{(float) matchMoveCount / moveCount:P}\n" +
+                         $"总消除次数\t{matchCount}\t平均每次连消（次）\t{(float) matchCount / matchMoveCount:F}\n" +
                          $"最大同时消除（次）\t{maxMatchCount}\n" +
                          $"最大连消（次）\t{maxCombo}";
+
+        var nextEnemy = enemyPool.Countdown();
+        if (nextEnemy != null)
+        {
+            DropEnemy(nextEnemy);
+        }
     }
 
     private List<TNTCellObject> GetContacts(TNTCellObject cellObject)
@@ -309,11 +365,6 @@ public class TNTGameMain : MonoBehaviour
             {
                 contacts.Add(self);
             }
-        }
-
-        foreach (var c in contacts)
-        {
-            Debug.Log(c);
         }
 
         return contacts;
@@ -371,5 +422,13 @@ public class TNTGameMain : MonoBehaviour
         }
 
         return connected;
+    }
+
+    public void OnEnemyCollision(EnemyInstance enemy, Collision2D collision)
+    {
+        if (collision.transform == currentDropdown)
+        {
+
+        }
     }
 }
